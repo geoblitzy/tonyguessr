@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TobyGuessr</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#000;
+      --text:#fff;
+      --muted:#bfbfbf;
+      --border:#fff;
+      --yellow:#ffd400;
+      --green:#35ff6a;
+      --red:#ff3b3b;
+
+      --radius: 0px;
+      --pad: 16px;
+
+      --font: "8bitoperator JVE","Determination Sans","Determination Mono", "Press Start 2P", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 22px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .app{
+      width: min(980px, 100%);
+      display:grid;
+      gap: 14px;
+      grid-template-columns: 1.2fr .8fr;
+      align-items:start;
+    }
+    @media (max-width: 860px){
+      .app{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: #000;
+      border: 3px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--pad);
+    }
+
+    h1{
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      letter-spacing: .5px;
+      line-height: 1.3;
+    }
+
+    .row{ display:flex; gap: 10px; flex-wrap:wrap; align-items:center; }
+
+    .file{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap:wrap;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      background: #000;
+    }
+
+    .btn{
+      border: 2px solid var(--border);
+      background: #000;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      cursor:pointer;
+      font-family: var(--font);
+      font-size: 12px;
+      letter-spacing: .2px;
+      transition: transform .04s ease, background .12s ease, color .12s ease;
+      user-select:none;
+    }
+    .btn:hover{ background: #292929; }
+    .btn:active{ transform: translateY(1px); }
+    .btn:disabled{ opacity: .45; cursor:not-allowed; }
+
+    .btn.yellow{ color: var(--yellow); }
+
+    .divider{
+      height: 0;
+      border-top: 3px solid var(--border);
+      margin: 14px 0;
+    }
+
+    .meta{
+      margin-top: 12px;
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+    }
+    .pill{
+      border: 0px solid var(--border);
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      background: #000;
+      font-size: 12px;
+      color: var(--text);
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      white-space:nowrap;
+    }
+    .muted{ color: var(--muted); }
+
+    .answerWrap{
+      margin-top: 12px;
+      display:grid;
+      gap: 10px;
+    }
+
+    .input{
+      flex: 1 1 320px;
+      min-width: 240px;
+      border: 2px solid var(--border);
+      background: #000;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      outline: none;
+      font-size: 12px;
+      font-family: var(--font);
+    }
+    .input:focus{ border-color: var(--yellow); }
+
+    .suggestBox{ position: relative; flex: 1 1 380px; min-width: 260px; }
+    .suggestList{
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 8px);
+      z-index: 10;
+      border: 3px solid var(--border);
+      background: #000;
+      border-radius: var(--radius);
+      display: none;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .suggestList.show{ display:block; }
+
+    .suggestItem{
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 3px solid var(--border);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .suggestItem:last-child{ border-bottom: none; }
+    .suggestItem:hover{ background: #111; }
+    .suggestItem small{ color: var(--muted); display:block; margin-top: 4px; }
+
+    .mark{ color: var(--yellow); }
+
+    .status{
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 3px solid var(--border);
+      border-radius: var(--radius);
+      background: #000;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .feedback{
+      margin-top: 10px;
+      border: 3px solid var(--border);
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: #000;
+      display:none;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .feedback.show{ display:block; }
+    .feedback.correct{ color: var(--green); }
+    .feedback.wrong{ color: var(--red); }
+
+    .queue{
+      margin-top: 10px;
+      display:grid;
+      gap: 10px;
+    }
+    .qItem{
+      border: 3px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      background: #000;
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .qItem small{ color: var(--muted); }
+
+    .srOnly{
+      position:absolute;
+      width:1px;height:1px;
+      padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;
+    }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="card" aria-label="Game">
+      <h1>TOBYGUESSR</h1>
+
+      <div class="file">
+        <button class="btn" id="reloadBtn">RELOAD SONGS</button>
+        <button class="btn yellow" id="shuffleBtn" disabled>SHUFFLE QUEUE</button>
+        <button class="btn" id="resetBtn" disabled>RESET</button>
+        <span style="flex:1 1 auto"></span>
+        <button class="btn" id="toggleQueueBtn" disabled>Show Queue</button>
+      </div>
+
+      <div class="meta">
+        <span class="pill">TOTAL <span class="muted" id="loadedCount">0</span></span>
+        <span class="pill">REMAINING <span class="muted" id="remainingCount">0</span></span>
+        <span class="pill">SCORE <span class="muted" id="scoreCount">0</span></span>
+        <span class="pill"><span class="muted" id="skipsCount">0</span> SKIPS</span>
+        <span class="pill">QUESTION <span class="muted" id="indexLabel">0</span></span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <button class="btn" id="play01" disabled>PLAY 0.1s</button>
+        <button class="btn" id="play05" disabled>PLAY 0.5s</button>
+        <button class="btn" id="play1" disabled>PLAY 1s</button>
+        <button class="btn" id="play5" disabled>PLAY 5s</button>
+        <button class="btn" id="skipBtn" disabled>SKIP</button>
+      </div>
+
+      <div class="answerWrap">
+        <div class="row">
+          <div class="suggestBox">
+            <input id="answerInput" class="input" type="text" placeholder="TYPE YOUR GUESS..." autocomplete="off" disabled />
+            <div id="suggestList" class="suggestList" role="listbox" aria-label="Suggestions"></div>
+          </div>
+          <button class="btn yellow" id="submitBtn" disabled>SUBMIT</button>
+        </div>
+        <div class="row">
+          <span class="pill">SELECTED <span class="muted" id="selectedLabel">none</span></span>
+          <span class="pill">ATTEMPTS <span class="muted" id="attemptsLabel">0</span></span>
+        </div>
+      </div>
+
+      <div id="feedbackBox" class="feedback" aria-live="polite"></div>
+
+      <div class="status" id="statusBox" role="status" aria-live="polite">
+        LOADING SONGS...
+      </div>
+
+      <audio id="player" class="srOnly" preload="metadata"></audio>
+    </section>
+
+    <aside class="card hidden" id="queueCard" aria-label="Queue">
+      <h1 style="margin-bottom:8px;">QUEUE</h1>
+      <div class="queue" id="queueList"></div>
+    </aside>
+  </div>
+
+  <script>
+    const reloadBtn = document.getElementById('reloadBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const toggleQueueBtn = document.getElementById('toggleQueueBtn');
+
+    const play01 = document.getElementById('play01');
+    const play05 = document.getElementById('play05');
+    const play1  = document.getElementById('play1');
+    const play5  = document.getElementById('play5');
+    const skipBtn = document.getElementById('skipBtn');
+
+    const answerInput = document.getElementById('answerInput');
+    const suggestList = document.getElementById('suggestList');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const loadedCount = document.getElementById('loadedCount');
+    const remainingCount = document.getElementById('remainingCount');
+    const scoreCount = document.getElementById('scoreCount');
+    const skipsCount = document.getElementById('skipsCount');
+    const indexLabel = document.getElementById('indexLabel');
+
+    const selectedLabel = document.getElementById('selectedLabel');
+    const attemptsLabel = document.getElementById('attemptsLabel');
+
+    const statusBox = document.getElementById('statusBox');
+    const feedbackBox = document.getElementById('feedbackBox');
+
+    const queueCard = document.getElementById('queueCard');
+    const queueList = document.getElementById('queueList');
+
+    const player = document.getElementById('player');
+
+    // Songs are objects: { name, url }
+    let songs = [];
+    let queue = [];
+    let currentIndex = 0;
+
+    let score = 0;
+    let skips = 0;
+    let attemptsThisSong = 0;
+
+    let selectedSong = null;
+    let selectedDisplay = "none";
+
+    // ---- Silence skipping (first 0.5s) ----
+    const MAX_SILENCE_SKIP = 0.5;      // seconds
+    const SILENCE_THRESHOLD = 0.003;   // amplitude threshold (tweak 0.001–0.01)
+    const SCAN_WINDOW_SAMPLES = 256;   // smaller = more precise, larger = faster
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const nonSilentOffsetCache = new Map(); // key: url -> seconds
+
+    function setStatus(html){
+      statusBox.innerHTML = html;
+    }
+
+    function showFeedback(type, text){
+      feedbackBox.classList.remove("correct","wrong","show");
+      if (!text){
+        feedbackBox.innerHTML = "";
+        return;
+      }
+      feedbackBox.innerHTML = text;
+      feedbackBox.classList.add("show");
+      if (type) feedbackBox.classList.add(type);
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function normalizeName(name){
+      const base = name.replace(/\.[^/.]+$/, "");
+      return base.trim().toLowerCase();
+    }
+
+    function shuffleArray(arr){
+      for (let i = arr.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function hasCurrentSong(){
+      return queue.length > 0 && currentIndex < queue.length;
+    }
+
+    function currentSong(){
+      return hasCurrentSong() ? queue[currentIndex] : null;
+    }
+
+    function resetAnswerBar(){
+      selectedSong = null;
+      selectedDisplay = "none";
+      attemptsThisSong = 0;
+
+      answerInput.value = "";
+      hideSuggestions();
+
+      selectedLabel.textContent = selectedDisplay;
+      attemptsLabel.textContent = String(attemptsThisSong);
+
+      showFeedback("", "");
+    }
+
+    function updateUI(){
+      const loaded = songs.length;
+      const remaining = Math.max(queue.length - currentIndex, 0);
+
+      loadedCount.textContent = String(loaded);
+      remainingCount.textContent = String(remaining);
+      scoreCount.textContent = String(score);
+      skipsCount.textContent = String(skips);
+      indexLabel.textContent = loaded ? String(currentIndex + 1) : "0";
+
+      const current = hasCurrentSong();
+
+      shuffleBtn.disabled = loaded === 0;
+      resetBtn.disabled = loaded === 0;
+      toggleQueueBtn.disabled = loaded === 0;
+
+      play01.disabled = !current;
+      play05.disabled = !current;
+      play1.disabled  = !current;
+      play5.disabled  = !current;
+      skipBtn.disabled = !current;
+
+      answerInput.disabled = !current;
+      submitBtn.disabled = !current;
+
+      if (!loaded){
+        setStatus(`NO SONGS LOADED. MAKE SURE songs/manifest.json EXISTS.`);
+      } else if (!current){
+        setStatus(`DONE. FINAL SCORE: <b>${score}</b> / <b>${queue.length}</b>.`);
+      } else {
+        setStatus(`SONG <b>${currentIndex + 1}</b> / <b>${queue.length}</b>.`);
+      }
+
+      renderQueuePreview();
+      selectedLabel.textContent = selectedDisplay;
+      attemptsLabel.textContent = String(attemptsThisSong);
+    }
+
+    function renderQueuePreview(){
+      if (queueCard.classList.contains("hidden")) return;
+
+      const windowSize = 10;
+      const start = Math.max(0, currentIndex - 3);
+      const end = Math.min(queue.length, start + windowSize);
+
+      queueList.innerHTML = "";
+      if (!queue.length){
+        const empty = document.createElement("div");
+        empty.className = "qItem";
+        empty.innerHTML = `<div><b>NO SONGS</b><br><small>CHECK songs/manifest.json</small></div>`;
+        queueList.appendChild(empty);
+        return;
+      }
+
+      for (let i = start; i < end; i++){
+        const item = document.createElement("div");
+        item.className = "qItem";
+
+        const left = document.createElement("div");
+        const isCurrent = i === currentIndex;
+        left.innerHTML = `
+          <b>${isCurrent ? "▶ " : ""}${i + 1}. ${escapeHtml(queue[i].name)}</b>
+          <br><small>${isCurrent ? "CURRENT" : ""}</small>
+        `;
+
+        item.appendChild(left);
+        queueList.appendChild(item);
+      }
+    }
+
+    async function ensureMetadataLoaded(){
+      if (player.readyState >= 1) return;
+      await new Promise((resolve, reject) => {
+        const onLoaded = () => { cleanup(); resolve(); };
+        const onErr = () => { cleanup(); reject(new Error("COULD NOT LOAD AUDIO METADATA.")); };
+        const cleanup = () => {
+          player.removeEventListener("loadedmetadata", onLoaded);
+          player.removeEventListener("error", onErr);
+        };
+        player.addEventListener("loadedmetadata", onLoaded, { once: true });
+        player.addEventListener("error", onErr, { once: true });
+      });
+    }
+
+    function loadCurrentSong(){
+      const s = currentSong();
+      if (!s) return;
+
+      player.pause();
+      player.src = s.url;
+      player.load();
+
+      resetAnswerBar();
+      updateUI();
+    }
+
+    async function getNonSilentOffset(song){
+      if (!song || !song.url) return 0;
+      if (nonSilentOffsetCache.has(song.url)) return nonSilentOffsetCache.get(song.url);
+
+      const res = await fetch(song.url);
+      if (!res.ok) throw new Error(`FAILED TO LOAD: ${song.url}`);
+      const arrayBuf = await res.arrayBuffer();
+
+      const decoded = await audioCtx.decodeAudioData(arrayBuf.slice(0));
+
+      const sr = decoded.sampleRate;
+      const maxSamples = Math.min(decoded.length, Math.floor(MAX_SILENCE_SKIP * sr));
+      const channels = decoded.numberOfChannels;
+
+      let offsetSamples = 0;
+      let found = false;
+
+      for (let i = 0; i < maxSamples; i += SCAN_WINDOW_SAMPLES){
+        const end = Math.min(i + SCAN_WINDOW_SAMPLES, maxSamples);
+        let maxAbs = 0;
+
+        for (let ch = 0; ch < channels; ch++){
+          const data = decoded.getChannelData(ch);
+          for (let s = i; s < end; s++){
+            const v = Math.abs(data[s]);
+            if (v > maxAbs) maxAbs = v;
+            if (maxAbs >= SILENCE_THRESHOLD) break;
+          }
+          if (maxAbs >= SILENCE_THRESHOLD) break;
+        }
+
+        if (maxAbs >= SILENCE_THRESHOLD){
+          offsetSamples = i;
+          found = true;
+          break;
+        }
+      }
+
+      const offsetSec = found ? (offsetSamples / sr) : 0;
+      nonSilentOffsetCache.set(song.url, offsetSec);
+      return offsetSec;
+    }
+
+    async function playSnippet(seconds){
+      if (!hasCurrentSong()) return;
+
+      try{
+        await audioCtx.resume();
+
+        if (!player.src) loadCurrentSong();
+        await ensureMetadataLoaded();
+
+        const s = currentSong();
+        let offset = 0;
+        try{
+          offset = await getNonSilentOffset(s);
+        } catch {
+          offset = 0;
+        }
+
+        player.pause();
+        player.currentTime = offset;
+
+        await new Promise((resolve) => {
+          const done = () => resolve();
+          player.addEventListener("seeked", done, { once: true });
+          setTimeout(done, 200);
+        });
+
+        await player.play();
+
+        const stopAt = performance.now() + seconds * 1000;
+        const tick = () => {
+          if (performance.now() >= stopAt){
+            player.pause();
+            player.currentTime = offset;
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+
+      } catch (e){
+        console.error(e);
+        setStatus(`AUDIO ERROR: <b>${escapeHtml(e.message || "UNKNOWN ERROR")}</b>.`);
+      }
+    }
+
+    function hideSuggestions(){
+      suggestList.classList.remove("show");
+      suggestList.innerHTML = "";
+    }
+
+    function showSuggestions(list){
+      suggestList.innerHTML = "";
+      if (!list.length){
+        hideSuggestions();
+        return;
+      }
+
+      for (const s of list){
+        const div = document.createElement("div");
+        div.className = "suggestItem";
+        div.innerHTML = `<div>${escapeHtml(s.name)}</div><small>${escapeHtml(normalizeName(s.name))}</small>`;
+        div.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          selectSuggestion(s);
+        });
+        suggestList.appendChild(div);
+      }
+
+      suggestList.classList.add("show");
+    }
+
+    function buildSuggestions(query){
+      const q = query.trim().toLowerCase();
+      if (!q) return [];
+
+      const matches = songs
+        .map(s => {
+          const base = normalizeName(s.name);
+          const full = s.name.toLowerCase();
+          const idxBase = base.indexOf(q);
+          const idxFull = full.indexOf(q);
+          const hit = (idxBase !== -1) || (idxFull !== -1);
+          const score = idxBase !== -1 ? idxBase : (idxFull !== -1 ? idxFull + 50 : 9999);
+          return { song: s, score, hit };
+        })
+        .filter(x => x.hit)
+        .sort((a,b) => a.score - b.score)
+        .slice(0, 8);
+
+      return matches.map(x => x.song);
+    }
+
+    function selectSuggestion(song){
+      selectedSong = song;
+      selectedDisplay = song.name;
+      answerInput.value = song.name;
+      hideSuggestions();
+      updateUI();
+    }
+
+    function submitAnswer(){
+      if (!hasCurrentSong()) return;
+
+      const current = currentSong();
+      const currentNorm = normalizeName(current.name);
+
+      const raw = answerInput.value.trim();
+      const guessSong = selectedSong;
+      const guessNorm = guessSong ? normalizeName(guessSong.name) : normalizeName(raw);
+
+      if (!raw){
+        setStatus("TYPE AN ANSWER FIRST.");
+        return;
+      }
+
+      const isCorrect = guessNorm && (guessNorm === currentNorm);
+
+      attemptsThisSong++;
+      attemptsLabel.textContent = String(attemptsThisSong);
+
+      if (isCorrect){
+        score++;
+        showFeedback("correct", "CORRECT!");
+        setStatus(`SCORE: <b>${score}</b>. MOVING ON...`);
+
+        setTimeout(() => {
+          player.pause();
+          player.currentTime = 0;
+
+          currentIndex++;
+          if (hasCurrentSong()){
+            loadCurrentSong();
+          } else {
+            player.removeAttribute("src");
+            player.load();
+            updateUI();
+          }
+        }, 500);
+
+      } else {
+        showFeedback("wrong", "WRONG. TRY AGAIN.");
+      }
+    }
+
+    function skipSong(){
+      if (!hasCurrentSong()) return;
+
+      const skipped = currentSong();
+      const answerName = skipped ? skipped.name : "UNKNOWN";
+
+      skips++;
+      skipsCount.textContent = String(skips);
+
+      player.pause();
+      player.currentTime = 0;
+
+      showFeedback("wrong", `SKIPPED. ANSWER: <b>${escapeHtml(answerName)}</b>`);
+      setStatus("MOVING ON...");
+
+      setTimeout(() => {
+        currentIndex++;
+        if (hasCurrentSong()){
+          loadCurrentSong();
+        } else {
+          player.removeAttribute("src");
+          player.load();
+          updateUI();
+        }
+      }, 2000);
+    }
+
+    function rebuildQueueAndRestart(){
+      queue = songs.slice();
+      shuffleArray(queue);
+      currentIndex = 0;
+      score = 0;
+      skips = 0;
+      nonSilentOffsetCache.clear();
+
+      if (queue.length){
+        loadCurrentSong();
+      }
+      updateUI();
+    }
+
+    async function loadSongsFromManifest(){
+      setStatus("LOADING SONGS...");
+
+      try{
+        const res = await fetch("songs/manifest.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("songs/manifest.json NOT FOUND");
+
+        const list = await res.json();
+        if (!Array.isArray(list)) throw new Error("manifest.json MUST BE A JSON ARRAY");
+
+        songs = list
+          .filter(x => typeof x === "string" && x.trim().length)
+          .map(name => ({ name, url: `songs/${encodeURIComponent(name)}` }));
+
+        if (!songs.length){
+          setStatus("manifest.json IS EMPTY.");
+        } else {
+          rebuildQueueAndRestart();
+          setStatus("READY.");
+        }
+      } catch (e){
+        console.error(e);
+        songs = [];
+        queue = [];
+        player.removeAttribute("src");
+        player.load();
+        showFeedback("wrong", `COULD NOT LOAD SONGS. MAKE SURE <b>songs/manifest.json</b> EXISTS AND YOU ARE RUNNING A LOCAL SERVER.`);
+        updateUI();
+      }
+    }
+
+    // ---- Events ----
+    reloadBtn.addEventListener("click", loadSongsFromManifest);
+
+    shuffleBtn.addEventListener("click", () => {
+      if (!songs.length) return;
+      rebuildQueueAndRestart();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      if (!songs.length) return;
+
+      player.pause();
+      player.currentTime = 0;
+
+      currentIndex = 0;
+      score = 0;
+      skips = 0;
+      nonSilentOffsetCache.clear();
+
+      queue = songs.slice();
+      shuffleArray(queue);
+
+      if (queue.length) loadCurrentSong();
+      updateUI();
+    });
+
+    toggleQueueBtn.addEventListener('click', () => {
+      const isHidden = queueCard.classList.contains("hidden");
+      if (isHidden){
+        queueCard.classList.remove("hidden");
+        toggleQueueBtn.textContent = "HIDE QUEUE";
+        renderQueuePreview();
+      } else {
+        queueCard.classList.add("hidden");
+        toggleQueueBtn.textContent = "SHOW QUEUE";
+      }
+    });
+
+    play01.addEventListener('click', () => playSnippet(0.1));
+    play05.addEventListener('click', () => playSnippet(0.5));
+    play1.addEventListener('click',  () => playSnippet(1));
+    play5.addEventListener('click',  () => playSnippet(5));
+    skipBtn.addEventListener('click', skipSong);
+
+    answerInput.addEventListener('input', () => {
+      selectedSong = null;
+      selectedDisplay = "none";
+      selectedLabel.textContent = selectedDisplay;
+
+      const q = answerInput.value;
+      const suggestions = buildSuggestions(q);
+      showSuggestions(suggestions);
+    });
+
+    answerInput.addEventListener('keydown', (e) => {
+      if (e.key === "Escape"){
+        hideSuggestions();
+      } else if (e.key === "Enter"){
+        e.preventDefault();
+        submitAnswer();
+      }
+    });
+
+    window.addEventListener('mousedown', (e) => {
+      const within = e.target === answerInput || suggestList.contains(e.target);
+      if (!within) hideSuggestions();
+    });
+
+    submitBtn.addEventListener('click', submitAnswer);
+
+    // Kick off
+    updateUI();
+    loadSongsFromManifest();
+  </script>
+</body>
+</html>
